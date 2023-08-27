@@ -1,1 +1,3 @@
 Term	Notes	English
+strictmodemod_config_enable		Enable Strict Mode
+strictmodemod_config_enable_tooltip		Strict mode restricts card transformations to only those you have discovered the idea for first.
