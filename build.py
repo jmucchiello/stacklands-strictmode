@@ -8,7 +8,7 @@ import json
 
 # ----- CONFIGURE THESE -----
 SYNC_FOLDERS = ["Blueprints", "Boosterpacks", "Cards", "Icons", "Sounds"] # folders to be synced, such as Cards, Blueprints, Icons, etc.
-COPY_FILES = ["manifest.json", "localization.tsv"] # individual files to copy, such as manifest.json, localization.tsv, etc. (the mod dll is copied automatically)
+COPY_FILES = ["manifest.json", "localization.tsv", "icon.png", "workshop.txt"] # individual files to copy, such as manifest.json, localization.tsv, etc. (the mod dll is copied automatically)
 MODS_ROOT = Path(os.environ["userprofile"]) / Path("AppData/LocalLow/sokpop/Stacklands/Mods") # windows only, can be hardcoded with the below line instead
 # MODS_ROOT = Path("C:/Users/cyber/AppData/LocalLow/sokpop/Stacklands/Mods").resolve()
 
@@ -50,6 +50,11 @@ with open(found_csprojs[0], encoding="utf-8") as f:
     DLL_NAME = f"{root.find('./PropertyGroup/AssemblyName').text}.dll"
     MOD_DLL = MOD_BIN / DLL_NAME
     MOD_PATH = MODS_ROOT / MOD_ID
+
+# check dll has unique name
+if DLL_NAME.lower() == "examplemod.dll":
+    print("Did you forget to rename the DLL in the project settings?")
+    exit(1);
 
 # copy dll
 MOD_PATH.mkdir(exist_ok=True)

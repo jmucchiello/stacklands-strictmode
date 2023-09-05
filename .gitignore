@@ -1,5 +1,7 @@
 bin/
 obj/
 .vs/
+*/sample_*.json
 Icon Sources/
 *.user
+README.bbcode
