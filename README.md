@@ -8,3 +8,13 @@ That's it. This mod is most difficult when you clear the save before starting a 
 
 Version 1.0.1: There are a few ideas that don't throw a blue ideas card at you that you really need access to. Hopefully I found them all. Let me know if you get stuck.
 
+# Challenge Mods
+
+This mod is part of my serious of mods that allow you to control the difficulty of the game. Try these other mods for increased control.
+
+* Strict Mode (this mod)
+* [Spawn Control](https://steamcommunity.com/sharedfiles/filedetails/?id=3044203151)
+* Enemy Difficulty (coming soon)
+* DLC Difficulty (coming soon)
+* Peaceful Mode Toggle (coming soon)
+ 
