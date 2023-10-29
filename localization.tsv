@@ -1,3 +1,16 @@
 Term	Notes	English
 strictmodemod_config_enable		Enable Strict Mode
 strictmodemod_config_enable_tooltip		Strict mode restricts card transformations to only those you have discovered the idea for first.
+strictmode_label		Strict Mode Options
+strictmode_label_tooltip		Strict mode restricts card transformations to only those you have discovered the idea for first.
+strictmode_btntext		Strict Mode
+strictmode_clearbtntext		Clear Save
+strictmode_clearbtndisabled		Clear Save: Strict Mode is not on
+strictmode_tooltip		If enabled, strict mode will be saved with the new save file.#It will ignore the current value set in the Mod's Options screen.
+strictmode_clear_ALL		Completely
+strictmode_clear_JUST_IDEAS		Just reset the Ideas.
+strictmode_clear_NEVER		No reset
+strictmode_clear_tooltip		If enabled, all ideas in the current save slot will be cleared out#This is important as the notification says how many ideas were known at game start.
+strictmode_notify		Strict Mode Mod
+strictmode_setting_OFF		Strict Mode is <color=blue>[enabled]</color>, based on the value set in the Mod Options screen.
+strictmode_setting_ON		Strict Mode is <color=blue>[enabled]</color>, as found in this Save File.#<color=blue>[count]/[current]</color> ideas known (when save created/now).

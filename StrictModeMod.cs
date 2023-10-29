@@ -1,70 +1,96 @@
-﻿using HarmonyLib;
-using System;
-using System.Collections;
+﻿using CommonModNS;
+using HarmonyLib;
 using UnityEngine;
-using UnityEngine.InputSystem.XR;
 
 namespace StrictModeModNS
 {
-    public class StrictModeMod : Mod
+    public enum ClearState { NEVER, JUST_IDEAS, ALL }
+    
+    [HarmonyPatch]
+    public partial class StrictModeMod : Mod
     {
-        public static StrictModeMod Instance;
-        public ConfigEntry<bool> IsStrict;
+        public static StrictModeMod instance;
+        public static void Log(string msg) => instance?.Logger.Log(msg);
+        public static void LogError(string msg) => instance?.Logger.LogError(msg);
 
-        public void Log(string msg) => Logger.Log(msg);
+        private ConfigEntryBool ConfigIsStrict;
+        public bool SaveSetting = false;
+        public ClearState ClearOnStart = ClearState.NEVER;
+        public bool IsStrict => SaveStateEnabled ? true : ConfigIsStrict.Value;
+
+        public bool SaveStateEnabled { get; private set; } = false;
+        public int IdeasOnSaveStart = -1;
+
+        private readonly List<string> ModifyableBlueprints = new();
+
+        private readonly string salt = Environment.MachineName + "?strictmode";
+        private readonly string SaveKeyName = "strictmode";
 
         private void Awake()
         {
-            Instance = this;
-            IsStrict = Config.GetEntry<bool>("strictmodemod_config_enable", false,
-                new ConfigUI() { NameTerm = "strictmodemod_config_enable",
-                    TooltipTerm = "strictmodemod_config_enable_tooltip",
-                    RestartAfterChange = true 
-                });
-//            Harmony.PatchAll();
+            instance = this;
+            WorldManagerPatches.GetSaveRound  += WM_GetSaveRound;  // save
+            WorldManagerPatches.LoadSaveRound += WM_LoadSaveRound; // load
+            WorldManagerPatches.StartNewRound += WM_StartNewRound; // new
+            WorldManagerPatches.Play += WM_Play;
+            WorldManagerPatches.ApplyPatches(Harmony);
+
+            ConfigIsStrict = new ConfigEntryBool("strictmodemod_config_enable", Config, false, new ConfigUI() {
+                NameTerm = "strictmodemod_config_enable",
+                TooltipTerm = "strictmodemod_config_enable_tooltip"
+            }) {
+                currentValueColor = Color.blue 
+            };
+
+            Harmony.PatchAll();
         }
 
         public override void Ready()
         {
-            List<string> skipIds = new List<string>() { "blueprint_happiness", "blueprint_greed_curse_fix" };
-            int count = 0;
-            Logger.Log($"Strict Mode is {(IsStrict.Value ? "Enabled" : "Disabled")}");
-            if (IsStrict.Value)
+            Log($"Machine: {salt}");
+            Log("Ready");
+        }
+
+        public void ApplySettings()
+        {
+            if (ModifyableBlueprints.Count == 0)
             {
-                Log("Updating blueprints...");
+                List<string> skipIds = new List<string>() { "blueprint_happiness", "blueprint_greed_curse_fix" };
                 foreach (Blueprint blueprint in WorldManager.instance.BlueprintPrefabs)
                 {
                     if (!blueprint.Id.StartsWith("ideas_") && !skipIds.Any(x => x == blueprint.Id) && !blueprint.IsInvention)
                     {
-                        ++count;
-                        blueprint.IsInvention = true;
-                    }
-                    else if (!blueprint.IsInvention)
-                    {
-                        Log($"...Skipping {blueprint.Id}");
+                        ModifyableBlueprints.Add(blueprint.Id);
                     }
                 }
-                AddSetCardBagIdea(SetCardBagType.CookingIdea, "blueprint_cooked_fish");
-                AddSetCardBagIdea(SetCardBagType.Island_AdvancedFood, "blueprint_cooked_fish");
-                AddSetCardBagIdea(SetCardBagType.Island_AdvancedFood, "blueprint_cooked_crab_meat");
-                AddSetCardBagIdea(SetCardBagType.Death_AdvancedIdea, "blueprint_fabric_2");
             }
-            Log($"Ready! {count} blueprints updated.");
+            Log($"ApplySettings - Strict Mode is {IsStrict}");
+            foreach (Blueprint blueprint in WorldManager.instance.BlueprintPrefabs.Where(b => ModifyableBlueprints.Contains(b.Id)))
+            {
+                blueprint.IsInvention = IsStrict;
+            }
+            AddRemoveSetCardBagIdea(SetCardBagType.CookingIdea, "blueprint_cooked_fish");
+            AddRemoveSetCardBagIdea(SetCardBagType.Island_BasicFood, "blueprint_fill_bottle");
+            AddRemoveSetCardBagIdea(SetCardBagType.Island_AdvancedFood, "blueprint_cooked_fish");
+            AddRemoveSetCardBagIdea(SetCardBagType.Island_AdvancedFood, "blueprint_cooked_crab_meat");
+            AddRemoveSetCardBagIdea(SetCardBagType.Death_AdvancedIdea, "blueprint_fabric_2");
         }
 
-        private void AddSetCardBagIdea(SetCardBagType type, string blueprintId, int chance = 1)
+        private void AddRemoveSetCardBagIdea(SetCardBagType type, string blueprintId, int chance = 1)
         {
             SetCardBagData cardBagData = WorldManager.instance.GameDataLoader.SetCardBags.Find(x => x.SetCardBagType == type);
             if (cardBagData != null)
             {
-                if (!cardBagData.Chances.Any(x => x.CardId == blueprintId))
+                if (IsStrict)
                 {
-                    cardBagData.Chances.Add(new SimpleCardChance { CardId = blueprintId, Chance = chance });
-                    Log($"...Added {blueprintId} to {type}");
+                    if (!cardBagData.Chances.Any(x => x.CardId == blueprintId))
+                    {
+                        cardBagData.Chances.Add(new SimpleCardChance { CardId = blueprintId, Chance = chance });
+                    }
                 }
                 else
                 {
-                    Log($"...{blueprintId} already found in {type}");
+                    cardBagData.Chances = cardBagData.Chances.Where<SimpleCardChance>(x => x.CardId != blueprintId).ToList();
                 }
             }
             else
@@ -72,18 +98,121 @@ namespace StrictModeModNS
                 Log($"...{type} not found.");
             }
         }
-    }
-/**
-    [HarmonyPatch(typeof(WorldManager),nameof(WorldManager.HasFoundCard))]
-    public class HasFoundCard
-    {
-        public static void Postfix(WorldManager __instance, bool __result, string cardId)
+
+        private void WM_StartNewRound(WorldManager wm)
         {
-            if (!__result && cardId != "blueprint_conveyor")
+            if (ClearOnStart == ClearState.ALL)
             {
-                StrictModeMod.Instance.Log($"HasFoundCard Not {cardId}");
+                I.Log($"NewRound 1 {(wm.CurrentSave == null ? "cursave is null" : wm.CurrentSave.DisabledMods == null ? "disabled mods is null" : wm.CurrentSave.DisabledMods.Count.ToString())}");
+                List<string> disabledMods = wm.CurrentSave?.DisabledMods;
+                I.Log($"NewRound 2");
+                wm.ClearSaveAndRestart();
+                I.Log($"NewRound 3 {(wm.AllBoosterBoxes == null ? "allboosters is null" : wm.AllBoosterBoxes.Count.ToString())}");
+                if (disabledMods != null) wm.CurrentSave.DisabledMods = disabledMods;
+            }
+            else if (ClearOnStart == ClearState.JUST_IDEAS)
+            {
+                wm.CurrentSave.FoundCardIds.RemoveAll(x => ModifyableBlueprints.Contains(x));
+                wm.CurrentSave.GotIslandIntroPack = false;
+            }
+            if (wm.AllBoosterBoxes != null)
+            {
+                foreach (BuyBoosterBox bbb in wm.AllBoosterBoxes)
+                {
+                    bbb.StoredCostAmount = 0;
+                }
+            }
+
+            IdeasOnSaveStart = wm.CurrentSave?.FoundCardIds?.Count(x => wm.BlueprintPrefabs.Find(b => x == b.Id && !b.HideFromIdeasTab)) ?? 0;
+            
+            I.Log("Calling Notification from StartNewRound");
+            OnLoadNotification();
+        }
+
+        private string ConstructSaveData(SaveRound round, int ideasCount)
+        {
+            string ideas = ideasCount.ToString();
+            List<string> strings = new List<string>();
+            strings.Add(round.SavedCards.Count.ToString());
+            strings.Add(round.BoardMonths.MainMonth.ToString());
+            strings.Add(round.MonthTimer.ToString());
+            strings.Add(ideas);
+            string x = String.Join(" ", strings) + " ";
+            string hash = (salt + ":" + x).GetHashCode().ToString() + ":" + ideas;
+            return hash;
+        }
+
+        private void DecodeSaveData(string hash, SaveRound round)
+        {
+            int pos = hash.IndexOf(":");
+            IdeasOnSaveStart = Int32.Parse(hash.Substring(pos + 1));
+            if (hash != ConstructSaveData(round, IdeasOnSaveStart))
+            {
+                SaveStateEnabled = false;
+                IdeasOnSaveStart = -1;
+                return;
+            }
+            SaveStateEnabled = true;
+        }
+
+
+        private void WM_LoadSaveRound(WorldManager wm, SaveRound saveRound)
+        {
+            string save = saveRound.ExtraKeyValues.Find(x => x.Key == SaveKeyName)?.Value;
+            if (String.IsNullOrEmpty(save))
+            {
+                SaveStateEnabled = false;
+                IdeasOnSaveStart = -1;
+            }
+            else
+            {
+                Log($"Calling decode on save data:\n{save}");
+                DecodeSaveData(save, saveRound);
+                Log($"SaveEnabled: {(SaveStateEnabled ? "On" : "Off")}, IdeasCount: {IdeasOnSaveStart}");
+            }
+            Log("Calling Notification from LoadSaveRound");
+            OnLoadNotification();
+        }
+
+        private void WM_GetSaveRound(WorldManager wm, SaveRound saveRound)
+        {
+            if (SaveStateEnabled)
+            {
+                string value = ConstructSaveData(saveRound, IdeasOnSaveStart);
+                Log($"Construct Save Data Returned:\n{value}");
+                if (value != null)
+                {
+                    saveRound.ExtraKeyValues.SetOrAdd(SaveKeyName, value);
+                }
+            }
+            else
+            {
+                var keyvalue = saveRound.ExtraKeyValues.Find(x => x.Key == SaveKeyName);
+                if (keyvalue != null) 
+                    saveRound.ExtraKeyValues.Remove(keyvalue);
+            }
+        }
+
+        private void WM_Play(WorldManager wm)
+        {
+            ApplySettings();
+        }
+
+        public void OnLoadNotification()
+        {
+            if (SaveStateEnabled)
+            {
+                int currentIdeaCount = I.WM.CurrentSave.FoundCardIds.Count(x => I.WM.BlueprintPrefabs.Find(b => x == b.Id && !b.HideFromIdeasTab));
+                I.GS.AddNotification(I.Xlat("strictmode_notify"),
+                                     "<size=22>" + I.Xlat("strictmode_setting_ON", LocParam.Create("enabled", I.Xlat("label_on"))
+                                                                   , LocParam.Create("count", IdeasOnSaveStart < 0 ? "Unknown" : IdeasOnSaveStart.ToString())
+                                                                   , LocParam.Create("current", currentIdeaCount.ToString())) + "</size>");
+            }
+            else
+            {
+                I.GS.AddNotification(I.Xlat("strictmode_notify"),
+                                     I.Xlat("strictmode_setting_OFF", LocParam.Create("enabled", ConfigIsStrict.Value ? I.Xlat("label_on") : I.Xlat("label_off"))));
             }
         }
     }
-**/
 }
