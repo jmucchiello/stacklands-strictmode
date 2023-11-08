@@ -47,7 +47,7 @@ namespace StrictModeModNS
 
         public override void Ready()
         {
-            Log($"Machine: {salt}");
+            //Log($"Machine: {salt}");
             Log("Ready");
         }
 

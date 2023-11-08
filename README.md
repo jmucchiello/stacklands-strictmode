@@ -15,7 +15,7 @@ When the notification popups up, it informs the viewer how many ideas were known
 
 Version 1.0.2:<br/> 
 Added save game functionality.<br/>
-Added the Fill Bottle idea to the Island Basic Food booster pack.<br/>
+Added the Fill Bottle idea to the Island Basic Food booster pack.
 
 Version 1.0.1:<br/>
 There are a few ideas that don't throw a blue ideas card at you that you really need access to. Hopefully I found them all. Let me know if you get stuck.
@@ -24,12 +24,12 @@ There are a few ideas that don't throw a blue ideas card at you that you really 
 This mod is part of my series of mods that allow you to control the difficulty of the game. Try these other mods for increased control.
 
 * [Can't Stop](https://steamcommunity.com/sharedfiles/filedetails/?id=3047503037) - Want to Pause the game? When this mod is active: You can't. (coming soon)
-* Cursed Worlds Difficulty - Modify the difficulty of various aspects of the Spirit World DLC. (coming sooner or later)
+* Cursed Worlds Extras - Modify the difficulty of various aspects of the Spirit World DLC and other stuff. (coming later)
 * [Enemy Difficulty](https://steamcommunity.com/sharedfiles/filedetails/?id=3044524742)- Change the power of all spawned enemies. (coming soon)
 * Peaceful Mode Toggle - Turn Peaceful Mode on and off without starting a new game. (coming sooner or later)
 * [Spawned Enemies Control](https://steamcommunity.com/sharedfiles/filedetails/?id=3044203151) - Control the speed and location of end of month events.
 * Strict Mode - Can't use ideas you have not found in game. (This mod)
-* Time Keeper - Track time playing a save file and the ability to lock the settings of my Challenge Mods in the save file (coming sooner or later)
+* Time Keeper - Track time playing a save file and the ability to lock the settings of my Challenge Mods in the save file (coming soon)
 
 # Tournament Mode
 In addition to controling the difficulty of the game, the collective purpose of these mods is to provide verifyable challenges to players. 
