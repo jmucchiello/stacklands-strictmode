@@ -1,11 +1,10 @@
 ﻿using CommonModNS;
 using HarmonyLib;
+using System.Reflection;
 using UnityEngine;
 
 namespace StrictModeModNS
-{
-    public enum ClearState { NEVER, JUST_IDEAS, ALL }
-    
+{   
     [HarmonyPatch]
     public partial class StrictModeMod : Mod
     {
@@ -15,8 +14,8 @@ namespace StrictModeModNS
 
         private ConfigEntryBool ConfigIsStrict;
         public bool SaveSetting = false;
-        public ClearState ClearOnStart = ClearState.NEVER;
         public bool IsStrict => SaveStateEnabled ? true : ConfigIsStrict.Value;
+        public bool ClearOnStart = false;
 
         public bool SaveStateEnabled { get; private set; } = false;
         public int IdeasOnSaveStart = -1;
@@ -29,33 +28,91 @@ namespace StrictModeModNS
         private void Awake()
         {
             instance = this;
-            WorldManagerPatches.GetSaveRound  += WM_GetSaveRound;  // save
-            WorldManagerPatches.LoadSaveRound += WM_LoadSaveRound; // load
-            WorldManagerPatches.StartNewRound += WM_StartNewRound; // new
-            WorldManagerPatches.Play += WM_Play;
-            WorldManagerPatches.ApplyPatches(Harmony);
-
-            ConfigIsStrict = new ConfigEntryBool("strictmodemod_config_enable", Config, false, new ConfigUI() {
-                NameTerm = "strictmodemod_config_enable",
-                TooltipTerm = "strictmodemod_config_enable_tooltip"
-            }) {
-                currentValueColor = Color.blue 
-            };
-
+            SavePatches();
+            SetupConfig();
+            SetupRunopts();
             Harmony.PatchAll();
         }
 
         public override void Ready()
         {
-            //Log($"Machine: {salt}");
             Log("Ready");
+        }
+
+        private void SavePatches()
+        {
+            WorldManagerPatches.GetSaveRound += WM_GetSaveRound;  // save
+            WorldManagerPatches.LoadSaveRound += WM_LoadSaveRound; // load
+            WorldManagerPatches.StartNewRound += WM_StartNewRound; // new
+            WorldManagerPatches.Play += WM_Play;
+            WorldManagerPatches.ApplyPatches(Harmony);
+            saveHelper.Ready(Path);
+        }
+
+        private void SetupConfig()
+        {
+            ConfigIsStrict = new ConfigEntryBool("strictmodemod_config_enable", Config, false, new ConfigUI()
+            {
+                NameTerm = "strictmodemod_config_enable",
+                TooltipTerm = "strictmodemod_config_enable_tooltip"
+            })
+            {
+                currentValueColor = Color.blue
+            };
+        }
+
+        enum RunStrict { DISABLE, ENABLE, ENABLENCLEARALL }
+        private RunoptsEnum<RunStrict> runoptsStrict;
+        SaveHelper saveHelper = new SaveHelper("StrictMode");
+
+        private void SetupRunopts()
+        {
+            runoptsStrict = new("strictmodemod_runopt", RunStrict.DISABLE)
+            {
+                NameTerm = "strictmodemod_runopt",
+                TooltipTerm = "strictmodemod_runopt_tooltip",
+                EnumTermPrefix = "strictmodemod_runopt_",
+                FontColor = Color.blue,
+                FontSize = 20,
+                Value = ConfigIsStrict.Value ? RunStrict.ENABLENCLEARALL : RunStrict.DISABLE
+            };
+            HookRunOptions.ApplyPatch(Harmony);
+        }
+
+        public override object Call(object[] args)
+        {
+            try
+            {
+                if (args.Length > 1)
+                {
+                    switch (args[0].ToString().ToLower())
+                    {
+                        case "skipblueprint":
+                            List<string> strings = (List<string>)(args[1]);
+                            break;
+                        case "addprinttobag":
+                            for (int i = 2; args.Length > i; i += 2)
+                            {
+                                SetCardBagType type = (SetCardBagType)args[i - 1];
+                                AddRemoveSetCardBagIdea(type, args[i].ToString());
+                            }
+                            break;
+                    }
+                    
+                }
+                return null;
+            }
+            catch (Exception e)
+            {
+                return e;
+            }
         }
 
         public void ApplySettings()
         {
             if (ModifyableBlueprints.Count == 0)
             {
-                List<string> skipIds = new List<string>() { "blueprint_happiness", "blueprint_greed_curse_fix" };
+                List<string> skipIds = new List<string>() { Cards.blueprint_happiness, Cards.blueprint_greed_curse_fix };
                 foreach (Blueprint blueprint in WorldManager.instance.BlueprintPrefabs)
                 {
                     if (!blueprint.Id.StartsWith("ideas_") && !skipIds.Any(x => x == blueprint.Id) && !blueprint.IsInvention)
@@ -69,11 +126,23 @@ namespace StrictModeModNS
             {
                 blueprint.IsInvention = IsStrict;
             }
-            AddRemoveSetCardBagIdea(SetCardBagType.CookingIdea, "blueprint_cooked_fish");
-            AddRemoveSetCardBagIdea(SetCardBagType.Island_BasicFood, "blueprint_fill_bottle");
-            AddRemoveSetCardBagIdea(SetCardBagType.Island_AdvancedFood, "blueprint_cooked_fish");
-            AddRemoveSetCardBagIdea(SetCardBagType.Island_AdvancedFood, "blueprint_cooked_crab_meat");
-            AddRemoveSetCardBagIdea(SetCardBagType.Death_AdvancedIdea, "blueprint_fabric_2");
+            I.WM.GetBlueprintWithId(Cards.blueprint_cooked_fish).HideFromCardopedia = !IsStrict;
+            I.WM.GetBlueprintWithId(Cards.blueprint_cooked_crab_meat).HideFromCardopedia = !IsStrict;
+
+            MethodInfo mi = AccessTools.Method(typeof(CardopediaScreen), "CreateEntries");
+            if (mi != null)
+            {
+                mi.Invoke(CardopediaScreen.instance, new object[0]);
+            }
+            else
+            {
+                I.Log("Failed to get MI for CardopediaScreen.CreateEntries");
+            }
+            AddRemoveSetCardBagIdea(SetCardBagType.CookingIdea, Cards.blueprint_cooked_fish);
+            AddRemoveSetCardBagIdea(SetCardBagType.Island_BasicFood, Cards.blueprint_fill_bottle);
+            AddRemoveSetCardBagIdea(SetCardBagType.Island_AdvancedFood, Cards.blueprint_cooked_fish);
+            AddRemoveSetCardBagIdea(SetCardBagType.Island_AdvancedFood, Cards.blueprint_cooked_crab_meat);
+            AddRemoveSetCardBagIdea(SetCardBagType.Death_AdvancedIdea, Cards.blueprint_fabric_2);
         }
 
         private void AddRemoveSetCardBagIdea(SetCardBagType type, string blueprintId, int chance = 1)
@@ -101,20 +170,16 @@ namespace StrictModeModNS
 
         private void WM_StartNewRound(WorldManager wm)
         {
-            if (ClearOnStart == ClearState.ALL)
+            if (runoptsStrict.Value == RunStrict.ENABLENCLEARALL)
             {
                 I.Log($"NewRound 1 {(wm.CurrentSave == null ? "cursave is null" : wm.CurrentSave.DisabledMods == null ? "disabled mods is null" : wm.CurrentSave.DisabledMods.Count.ToString())}");
                 List<string> disabledMods = wm.CurrentSave?.DisabledMods;
                 I.Log($"NewRound 2");
                 wm.ClearSaveAndRestart();
                 I.Log($"NewRound 3 {(wm.AllBoosterBoxes == null ? "allboosters is null" : wm.AllBoosterBoxes.Count.ToString())}");
-                if (disabledMods != null) wm.CurrentSave.DisabledMods = disabledMods;
+                if (disabledMods != null && wm.CurrentSave != null) wm.CurrentSave.DisabledMods = disabledMods;
             }
-            else if (ClearOnStart == ClearState.JUST_IDEAS)
-            {
-                wm.CurrentSave.FoundCardIds.RemoveAll(x => ModifyableBlueprints.Contains(x));
-                wm.CurrentSave.GotIslandIntroPack = false;
-            }
+            SaveStateEnabled = runoptsStrict.Value != RunStrict.DISABLE;
             if (wm.AllBoosterBoxes != null)
             {
                 foreach (BuyBoosterBox bbb in wm.AllBoosterBoxes)
