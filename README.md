@@ -8,7 +8,7 @@ The mod can be enabled/disabled in the Mod Options Screen and is disabled by def
 You can also activate this mod when starting a new game. The status of the mod in the save game overrides the setting in the Options screen.
 A notification is displayed to show that the mod was active. You can use this to prove that your screen shots are authentic, if that interests you.
 
-When you enable strict mod on the Start New Run screen, you can clear the save game slot as part of the new game.
+When you enable strict mode on the Start New Run screen, you can clear the save game slot as part of the new game.
 When the notification popups up, it informs the viewer how many ideas were known when the save game was created.
 
 # Updates
@@ -28,7 +28,7 @@ This mod is part of my series of mods that allow you to control the difficulty o
 * [Enemy Difficulty](https://steamcommunity.com/sharedfiles/filedetails/?id=3044524742)- Change the power of all spawned enemies. (coming soon)
 * Peaceful Mode Toggle - Turn Peaceful Mode on and off without starting a new game. (coming sooner or later)
 * [Spawned Enemies Control](https://steamcommunity.com/sharedfiles/filedetails/?id=3044203151) - Control the speed and location of end of month events.
-* Strict Mode - Can't use ideas you have not found in game. (This mod)
+* Strict Mode - Can't use ideas for which you haven't found the blueprint in this run. (This mod)
 * Time Keeper - Track time playing a save file and the ability to lock the settings of my Challenge Mods in the save file (coming soon)
 
 # Tournament Mode

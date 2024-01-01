@@ -16,6 +16,7 @@ namespace StrictModeModNS
         public bool SaveSetting = false;
         public bool IsStrict => SaveStateEnabled ? true : ConfigIsStrict.Value;
         public bool ClearOnStart = false;
+        private bool? startingStrictness;
 
         public bool SaveStateEnabled { get; private set; } = false;
         public int IdeasOnSaveStart = -1;
@@ -32,6 +33,7 @@ namespace StrictModeModNS
             SetupConfig();
             SetupRunopts();
             Harmony.PatchAll();
+            GameOverScreen_Patch.AddListener(GameOverText);
         }
 
         public override void Ready()
@@ -110,6 +112,9 @@ namespace StrictModeModNS
 
         public void ApplySettings()
         {
+            if (startingStrictness.HasValue && startingStrictness.Value == IsStrict) return;
+            startingStrictness = IsStrict;
+
             if (ModifyableBlueprints.Count == 0)
             {
                 List<string> skipIds = new List<string>() { Cards.blueprint_happiness, Cards.blueprint_greed_curse_fix };
@@ -166,6 +171,16 @@ namespace StrictModeModNS
             {
                 Log($"...{type} not found.");
             }
+        }
+
+        private string GameOverText()
+        {
+            string text = "";
+            if (SaveStateEnabled)
+            {
+                text = "<size=25>" + I.Xlat("strictmodemod_gameover", LocParam.Plural("ideas", IdeasOnSaveStart)) + "</size>\n";
+            }
+            return text;
         }
 
         private void WM_StartNewRound(WorldManager wm)

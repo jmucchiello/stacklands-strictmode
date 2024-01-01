@@ -4,10 +4,11 @@ strictmodemod_config_enable_tooltip		Strict mode restricts card transformations 
 strictmode_btntext		Strict Mode
 strictmode_tooltip		If enabled, strict mode will be saved with the new save file.#It will ignore the current value set in the Mod's Options screen.
 strictmode_notify		Strict Mode Mod
-strictmode_setting_OFF		Strict Mode is <color=blue>[enabled]</color>, based on the value set in the Mod Options screen.
-strictmode_setting_ON		Strict Mode is <color=blue>[enabled]</color>, as found in this Save File.#<color=blue>[count]/[current]</color> ideas were known (when save created/now).
+strictmode_setting_OFF		Strict Mode is <color=blue>[enabled]</color>, in the Mod Options screen.
+strictmode_setting_ON		Strict Mode is <color=blue>[enabled]</color>, in this save file.#Ideas Known - save start: <color=blue>[count]</color>, currently: <color=blue>[current]</color>.
 strictmodemod_runopt		Strict Mode
 strictmodemod_runopt_DISABLE		Disabled
 strictmodemod_runopt_ENABLE		Enabled, save is not cleared
 strictmodemod_runopt_ENABLENCLEARALL		Enabled, clear save on start
 strictmodemod_runopt_tooltip		Clearing the save removes all ideas, quests, etc from the save slot.
+strictmodemod_gameover		Strict Mode was enabled with [ideas] ideas known at start of game.
