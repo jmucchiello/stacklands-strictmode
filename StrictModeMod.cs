@@ -185,16 +185,21 @@ namespace StrictModeModNS
 
         private void WM_StartNewRound(WorldManager wm)
         {
-            if (runoptsStrict.Value == RunStrict.ENABLENCLEARALL)
+            if (!runoptsStrict.Enabled) SaveStateEnabled = false;
+            else if (runoptsStrict.Value == RunStrict.ENABLENCLEARALL)
             {
-                I.Log($"NewRound 1 {(wm.CurrentSave == null ? "cursave is null" : wm.CurrentSave.DisabledMods == null ? "disabled mods is null" : wm.CurrentSave.DisabledMods.Count.ToString())}");
+                //I.Log($"NewRound 1 {(wm.CurrentSave == null ? "cursave is null" : wm.CurrentSave.DisabledMods == null ? "disabled mods is null" : wm.CurrentSave.DisabledMods.Count.ToString())}");
                 List<string> disabledMods = wm.CurrentSave?.DisabledMods;
-                I.Log($"NewRound 2");
+                //I.Log($"NewRound 2");
                 wm.ClearSaveAndRestart();
-                I.Log($"NewRound 3 {(wm.AllBoosterBoxes == null ? "allboosters is null" : wm.AllBoosterBoxes.Count.ToString())}");
+                //I.Log($"NewRound 3 {(wm.AllBoosterBoxes == null ? "allboosters is null" : wm.AllBoosterBoxes.Count.ToString())}");
                 if (disabledMods != null && wm.CurrentSave != null) wm.CurrentSave.DisabledMods = disabledMods;
+                SaveStateEnabled = true;
             }
-            SaveStateEnabled = runoptsStrict.Value != RunStrict.DISABLE;
+            else
+            {
+                SaveStateEnabled = runoptsStrict.Value != RunStrict.DISABLE;
+            }
             if (wm.AllBoosterBoxes != null)
             {
                 foreach (BuyBoosterBox bbb in wm.AllBoosterBoxes)
@@ -203,7 +208,7 @@ namespace StrictModeModNS
                 }
             }
 
-            IdeasOnSaveStart = wm.CurrentSave?.FoundCardIds?.Count(x => wm.BlueprintPrefabs.Find(b => x == b.Id && !b.HideFromIdeasTab)) ?? 0;
+            IdeasOnSaveStart = SaveStateEnabled ? wm.CurrentSave?.FoundCardIds?.Count(x => wm.BlueprintPrefabs.Find(b => x == b.Id && !b.HideFromIdeasTab)) ?? 0 : -1;
             
             I.Log("Calling Notification from StartNewRound");
             OnLoadNotification();
