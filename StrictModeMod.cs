@@ -117,7 +117,7 @@ namespace StrictModeModNS
 
             if (ModifyableBlueprints.Count == 0)
             {
-                List<string> skipIds = new List<string>() { Cards.blueprint_happiness, Cards.blueprint_greed_curse_fix };
+                List<string> skipIds = [Cards.blueprint_happiness, Cards.blueprint_greed_curse_fix, Cards.blueprint_death_curse_fix];
                 foreach (Blueprint blueprint in WorldManager.instance.BlueprintPrefabs)
                 {
                     if (!blueprint.Id.StartsWith("ideas_") && !skipIds.Any(x => x == blueprint.Id) && !blueprint.IsInvention)
@@ -131,23 +131,32 @@ namespace StrictModeModNS
             {
                 blueprint.IsInvention = IsStrict;
             }
-            I.WM.GetBlueprintWithId(Cards.blueprint_cooked_fish).HideFromCardopedia = !IsStrict;
-            I.WM.GetBlueprintWithId(Cards.blueprint_cooked_crab_meat).HideFromCardopedia = !IsStrict;
+            List<string> newIdeas = [Cards.blueprint_cooked_fish, Cards.cooked_crab_meat, Cards.blueprint_fill_bottle];
+            foreach (string cardId in newIdeas)
+            {
+                I.WM.GetBlueprintWithId(cardId).HideFromCardopedia = !IsStrict;
+            }
 
-            MethodInfo mi = AccessTools.Method(typeof(CardopediaScreen), "CreateEntries");
-            if (mi != null)
-            {
-                mi.Invoke(CardopediaScreen.instance, new object[0]);
-            }
-            else
-            {
-                I.Log("Failed to get MI for CardopediaScreen.CreateEntries");
-            }
+            Call_Cardopedia_CreateEntries(CardopediaScreen.instance);
+
             AddRemoveSetCardBagIdea(SetCardBagType.CookingIdea, Cards.blueprint_cooked_fish);
             AddRemoveSetCardBagIdea(SetCardBagType.Island_BasicFood, Cards.blueprint_fill_bottle);
             AddRemoveSetCardBagIdea(SetCardBagType.Island_AdvancedFood, Cards.blueprint_cooked_fish);
             AddRemoveSetCardBagIdea(SetCardBagType.Island_AdvancedFood, Cards.blueprint_cooked_crab_meat);
             AddRemoveSetCardBagIdea(SetCardBagType.Death_AdvancedIdea, Cards.blueprint_fabric_2);
+        }
+
+        private void Call_Cardopedia_CreateEntries(CardopediaScreen instance)
+        {
+            MethodInfo mi = AccessTools.Method(typeof(CardopediaScreen), "CreateEntries");
+            if (mi != null)
+            {
+                mi.Invoke(instance, new object[0]);
+            }
+            else
+            {
+                I.Log("Failed to get MI for CardopediaScreen.CreateEntries");
+            }
         }
 
         private void AddRemoveSetCardBagIdea(SetCardBagType type, string blueprintId, int chance = 1)
