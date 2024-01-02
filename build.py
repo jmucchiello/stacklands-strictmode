@@ -1,3 +1,4 @@
+from genericpath import isfile
 import os
 import shutil
 import subprocess
@@ -80,4 +81,7 @@ for folder in SYNC_FOLDERS:
     sync_folder(Path(folder), MOD_PATH / folder)
 
 # run bb.cmd
-subprocess.call("..\MarkdownToSteam.exe -i README.md -o README.bbcode")
+if os.path.isfile("README.md"):
+    if not os.path.isfile("README.bbcode") or os.path.getmtime('README.md') > os.path.getmtime('README.bbcode'):
+        print("Updating bbcode file")
+        subprocess.call("..\MarkdownToSteam.exe -i README.md -o README.bbcode")
