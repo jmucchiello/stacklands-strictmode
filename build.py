@@ -78,3 +78,6 @@ for file in COMMON:
 print("syncing folders..")
 for folder in SYNC_FOLDERS:
     sync_folder(Path(folder), MOD_PATH / folder)
+
+# run bb.cmd
+subprocess.call("..\MarkdownToSteam.exe -i README.md -o README.bbcode")
