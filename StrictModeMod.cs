@@ -12,7 +12,10 @@ namespace StrictModeModNS
         public static void Log(string msg) => instance?.Logger.Log(msg);
         public static void LogError(string msg) => instance?.Logger.LogError(msg);
 
+        public bool AllowNotifications => configAllowNotifications?.Value ?? true;
+
         private ConfigEntryBool ConfigIsStrict;
+        private ConfigEntryBool configAllowNotifications;
         public bool SaveSetting = false;
         public bool IsStrict => SaveStateEnabled ? true : ConfigIsStrict.Value;
         public bool ClearOnStart = false;
@@ -22,6 +25,10 @@ namespace StrictModeModNS
         public int IdeasOnSaveStart = -1;
 
         private readonly List<string> ModifyableBlueprints = new();
+
+        enum RunStrict { DISABLE, ENABLE, ENABLENCLEARALL }
+        private RunoptsEnum<RunStrict> runoptsStrict;
+        SaveHelper saveHelper = new SaveHelper("StrictMode");
 
         private readonly string salt = Environment.MachineName + "?strictmode";
         private readonly string SaveKeyName = "strictmode";
@@ -38,6 +45,7 @@ namespace StrictModeModNS
 
         public override void Ready()
         {
+            ApplySettings();
             Log("Ready");
         }
 
@@ -61,11 +69,17 @@ namespace StrictModeModNS
             {
                 currentValueColor = Color.blue
             };
-        }
 
-        enum RunStrict { DISABLE, ENABLE, ENABLENCLEARALL }
-        private RunoptsEnum<RunStrict> runoptsStrict;
-        SaveHelper saveHelper = new SaveHelper("StrictMode");
+            configAllowNotifications = new ConfigEntryBool("strictmodemod_config_notifications", Config, true, new ConfigUI()
+            {
+                NameTerm = "strictmodemod_config_notifications",
+                TooltipTerm = "strictmodemod_config_notifications_tooltip"
+            })
+            {
+                currentValueColor = Color.blue
+            };
+
+        }
 
         private void SetupRunopts()
         {
@@ -118,7 +132,7 @@ namespace StrictModeModNS
             if (ModifyableBlueprints.Count == 0)
             {
                 List<string> skipIds = [Cards.blueprint_happiness, Cards.blueprint_greed_curse_fix, Cards.blueprint_death_curse_fix];
-                foreach (Blueprint blueprint in WorldManager.instance.BlueprintPrefabs)
+                foreach (Blueprint blueprint in I.WM.CardDataPrefabs.Where(x => x as Blueprint != null))
                 {
                     if (!blueprint.Id.StartsWith("ideas_") && !skipIds.Any(x => x == blueprint.Id) && !blueprint.IsInvention)
                     {
@@ -127,18 +141,24 @@ namespace StrictModeModNS
                 }
             }
             Log($"ApplySettings - Strict Mode is {IsStrict}");
-            foreach (Blueprint blueprint in WorldManager.instance.BlueprintPrefabs.Where(b => ModifyableBlueprints.Contains(b.Id)))
+            foreach (Blueprint blueprint in I.WM.CardDataPrefabs.Where(b => ModifyableBlueprints.Contains(b.Id)))
             {
                 blueprint.IsInvention = IsStrict;
+                blueprint.nameOverride = IsStrict ? I.Xlat("label_idea_fullname", LocParam.Create("name", I.Xlat(blueprint.NameTerm))) : null;
             }
-            List<string> newIdeas = [Cards.blueprint_cooked_fish, Cards.cooked_crab_meat, Cards.blueprint_fill_bottle];
+            List<string> newIdeas = [Cards.blueprint_cooked_fish, Cards.blueprint_cooked_crab_meat, Cards.blueprint_fill_bottle];
             foreach (string cardId in newIdeas)
             {
-                I.WM.GetBlueprintWithId(cardId).HideFromCardopedia = !IsStrict;
+                Blueprint bp = I.WM.GetBlueprintWithId(cardId);
+                if (bp == null)
+                {
+                    Log($"bp is null for cardid {cardId}");
+                    continue;
+                }
+                bp.HideFromCardopedia = !IsStrict;
             }
 
             Call_Cardopedia_CreateEntries(CardopediaScreen.instance);
-
             AddRemoveSetCardBagIdea(SetCardBagType.CookingIdea, Cards.blueprint_cooked_fish);
             AddRemoveSetCardBagIdea(SetCardBagType.Island_BasicFood, Cards.blueprint_fill_bottle);
             AddRemoveSetCardBagIdea(SetCardBagType.Island_AdvancedFood, Cards.blueprint_cooked_fish);
@@ -148,6 +168,11 @@ namespace StrictModeModNS
 
         private void Call_Cardopedia_CreateEntries(CardopediaScreen instance)
         {
+            if (instance == null)
+            {
+                I.Log("CardopediaScreen.instance is null");
+                return;
+            }
             MethodInfo mi = AccessTools.Method(typeof(CardopediaScreen), "CreateEntries");
             if (mi != null)
             {
@@ -294,6 +319,7 @@ namespace StrictModeModNS
 
         public void OnLoadNotification()
         {
+            if (!AllowNotifications) return;
             if (SaveStateEnabled)
             {
                 int currentIdeaCount = I.WM.CurrentSave.FoundCardIds.Count(x => I.WM.BlueprintPrefabs.Find(b => x == b.Id && !b.HideFromIdeasTab));

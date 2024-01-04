@@ -12,3 +12,5 @@ strictmodemod_runopt_ENABLE		Enabled, save is not cleared
 strictmodemod_runopt_ENABLENCLEARALL		Enabled, clear save on start
 strictmodemod_runopt_tooltip		Clearing the save removes all ideas, quests, etc from the save slot.
 strictmodemod_gameover		Strict Mode was enabled with [ideas] ideas known at start of game.
+strictmodemod_config_notifications		Allow Notifications at Game Start
+strictmodemod_config_notifications_tooltip		A notification is displayed when the game starts#to remind the player whether Strict Mode#is enabled and whether that setting came from the#save file or from the mod options screen.
