@@ -10,6 +10,9 @@ When you enable strict mode on the *Start New Run* screen, you can clear the sav
 When the notification popups up, it informs the viewer how many ideas were known when the save game was created.
 
 ## Updates
+**Version 1.0.4:**<br/> 
+Ensure Fill Bottle idea end up in the Cardopedia
+
 **Version 1.0.3:**<br/> 
 Added *Start New Run* putting strict mode into the save file<br/>
 Added Game Over status message when strict mode is in the save file<br/>
@@ -17,7 +20,7 @@ Ensure Cook Raw Fish and Cook Raw Crab ideas end up in the Cardopedia
 
 **Version 1.0.2:** (Never released publicly)<br/>
 Added the Fill Bottle idea to the Island Basic Food booster pack.<br/>
-Added notification popups when game is *Continued* from the *Main Menu***.**
+Added notification popups when game is *Continued* from the *Main Menu*.
 
 **Version 1.0.1:**<br/>
 There are a few ideas that don't throw a blue ideas card at you that you really need access to. Hopefully I found them all. Let me know if you get stuck.
